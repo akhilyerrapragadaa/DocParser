@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ToString</name>
+    </assembly>
+    <members>
+        <member name="T:IgnoreDuringToStringAttribute">
+            <summary>
+            Property will be ignored during generating ToString method.
+            </summary>
+        </member>
+        <member name="T:ToStringAttribute">
+            <summary>
+            Adds ToString method to class.
+            </summary>
+        </member>
+    </members>
+</doc>
