@@ -1,16 +1,12 @@
-﻿using DocParser.Service;
-using java.io;
-using NPOI.HSSF.UserModel;
-using NPOI.XWPF.Usermodel;
-using NPOI.XWPF.UserModel;
+﻿using DocParser.Models;
+using DocParser.Service;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+
 
 namespace DocParser.Controllers
 {
@@ -22,8 +18,14 @@ namespace DocParser.Controllers
             return View();
         }
 
-        public ActionResult Upload(HttpPostedFileBase file) 
+        [Obsolete]
+        public ActionResult Upload(HttpPostedFileBase file, FormData smodel) 
         {
+            string[] selectedLanguages = smodel.SelectedLanguages;
+            languageSelector getLanguageDemands = new languageSelector();
+            var shouldList = getLanguageDemands.shouldSearch(selectedLanguages);
+            var shallList =  getLanguageDemands.shallSearch(selectedLanguages);          
+
             var model = Server.MapPath("~/DocsFold/");
             var compatibledocTypes = new List<string> { ".doc", ".docx", ".pdf" };
             string sFileExtension = Path.GetExtension(file.FileName).ToLower();
@@ -32,9 +34,13 @@ namespace DocParser.Controllers
             if (file.ContentLength > 0 && contains)
             {
                 //Generate Json
-                JsonGen newGenerate = new JsonGen();             
-                newGenerate.readFileData(file.InputStream, sFileExtension);
-                System.IO.File.WriteAllText(model + Path.GetFileNameWithoutExtension(file.FileName) + ".json", newGenerate.MyDictionaryToJson());
+                BodyRetriever retrieve = new BodyRetriever();
+                retrieve.newMethod(file.InputStream);
+
+                JsonGen newGenerate = new JsonGen();  
+                newGenerate.readFileData(file.InputStream, sFileExtension, shouldList, shallList);
+
+                System.IO.File.WriteAllText(model + Path.GetFileNameWithoutExtension(file.FileName) + ".json", retrieve.getJson());
                 ViewBag.Msg = "Uploaded Succesfully";
             }
             else
@@ -43,5 +49,6 @@ namespace DocParser.Controllers
             }
             return View("Index");
         }
+
     }
 }

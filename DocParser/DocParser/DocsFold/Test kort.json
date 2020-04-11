@@ -1,0 +1,32 @@
+{
+  "1": {
+    "m_MaxCapacity": 2147483647,
+    "Capacity": 484,
+    "m_StringValue": "TECHNICAL REQUIREMENTSThe equipment shall comply with the requirements in this document and referenced standards. In the event of conflicting requirements in different documents or within the technical specification, the Supplier shall inform the Purchaser for review and clarification of the requirements.If any obvious errors are found within the technical specification (for   example errors in a Type circuit), the Supplier shall inform the Purchaser for review and clarification.",
+    "m_currentThread": 0
+  },
+  "2": {
+    "m_MaxCapacity": 2147483647,
+    "Capacity": 402,
+    "m_StringValue": "General requirementsThe following major European directives shall be applicable to delivery of electrical equipment covered by this technical specification and shall be applied:By complying with above-mentioned Directives, it is implied that the underlying normative European Standards should be taken into consideration, even if they not are specifically listed or referenced to in this specification.",
+    "m_currentThread": 0
+  },
+  "3": {
+    "m_MaxCapacity": 2147483647,
+    "Capacity": 136,
+    "m_StringValue": "National RegulationsBelow is list of relevant and significant national regulation, generally originated from above mentioned directives.",
+    "m_currentThread": 0
+  },
+  "4": {
+    "m_MaxCapacity": 2147483647,
+    "Capacity": 397,
+    "m_StringValue": "International Rules and StandardsAll equipment shall be designed and manufactured to the latest revision of   the standards and specifications except where specifically defined otherwise, see Table 3.The Supplier shall specify standards to which the product/delivery conforms. Please note that TBExxx as specified in section 2.1.4 may reference more standards that are applicable for the delivery.",
+    "m_currentThread": 0
+  },
+  "5": {
+    "m_MaxCapacity": 2147483647,
+    "Capacity": 661,
+    "m_StringValue": "Company rules & standardsListed below are relevant and significant documents that should be applicable for the delivery of the equipment covered by this technical specification. TBE requirements are valid for electrical equipment and instruments and shall be applied, although some of the more important aspects are listed in this technical specification.It is the requirements in the technical specification that will be graded and reviewed for assessment.Requirements specified in the technical specification (this document) shall supersede requirements in TBExxx when they are in disagreement, unless there is an obvious error in the technical specification.",
+    "m_currentThread": 0
+  }
+}

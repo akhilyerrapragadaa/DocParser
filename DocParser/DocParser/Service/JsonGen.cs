@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.UI.WebControls;
+using System.Collections.Concurrent;
 
 
 namespace DocParser.Service
@@ -23,11 +24,16 @@ namespace DocParser.Service
         public static Dictionary<String, List<Demand>> allDemands = new Dictionary<String, List<Demand>>();
         public List<Demand> headerDemands = new List<Demand>();
         public List<Demand> bodyDemands = new List<Demand>();
-
+        private ConcurrentBag<string> newshouldList = new ConcurrentBag<string>();
+        private ConcurrentBag<string> newshallList = new ConcurrentBag<string>();
 
         //Creating a Json
-        public void readFileData(Stream file, string extensionName)
+
+        public void readFileData(Stream file, string extensionName, ConcurrentBag<string> shouldList, ConcurrentBag<string> shallList)
         {
+            newshouldList = shouldList;
+            newshallList = shallList;
+
             if (extensionName.Equals(".pdf"))
             {
                 Task<XWPFDocument> pdfThread = Task<XWPFDocument>.Factory.StartNew(() =>
@@ -41,27 +47,30 @@ namespace DocParser.Service
             else
             {
                 file.Position = 0;
-                Document = new XWPFDocument(file);
+                Document = new XWPFDocument(file);       
+
             }
 
             var headers = this.getTitle();
 
             foreach (Demand header in headers) { headerDemands.Add(header); }
 
-            Task<List<String>> task = Task<List<String>>.Factory.StartNew(() =>
+            Task<List<StringBuilder>> task = Task<List<StringBuilder>>.Factory.StartNew(() =>
             {
-                var test = this.getBody();
-                return test;
-            });
-            List<String> body = task.Result;
+                BodyRetriever retrieve = new BodyRetriever();
+                var test = retrieve.getBody(Document);
 
+               return test;
+            });
+              List<StringBuilder> body = task.Result;
 
             Debug.WriteLine(body);
             this.demandNumberGenerator(body);
-            
+
         }
 
-        public void demandNumberGenerator(List<String> body) { 
+        public void demandNumberGenerator(List<StringBuilder> body)
+        {
 
             Parallel.ForEach(body, new ParallelOptions { MaxDegreeOfParallelism = 1 }, eachPara =>
             {
@@ -69,7 +78,7 @@ namespace DocParser.Service
                 int counter = 0;
 
                 if (eachPara.Length != 0)
-                    firstCharOfString = this.getInit(Regex.Replace(eachPara, @"\s+", ""));
+                    firstCharOfString = this.getInit(Regex.Replace(eachPara.ToString(), @"\s+", ""));
 
 
                 if (saved.Equals(firstCharOfString) && eachPara.Length != 0)
@@ -87,10 +96,10 @@ namespace DocParser.Service
 
 
                     if (!Regex.IsMatch(hg.Current, @"\d\.\d\.\d"))
-                         this.godown();
-                  
-                       parasToDemand(eachPara, firstCharOfString);
-               
+                        this.godown();
+
+                    parasToDemand(eachPara.ToString(), firstCharOfString);
+
                 }
                 else
                 {
@@ -101,108 +110,112 @@ namespace DocParser.Service
                         {
                             hg.UpLevels(1);
                         }
-                       parasToDemand(eachPara, firstCharOfString);
-             
+                        parasToDemand(eachPara.ToString(), firstCharOfString);
+
                     }
                 }
                 saved = firstCharOfString;
             });
             this.addDataToDict(bodyDemands, headerDemands);
-          
+
         }
 
 
-            public void parasToDemand(String eachPara, String firstCharOfString) {
-            
-                if (eachPara.Length != 0)
+        public void parasToDemand(String eachPara, String firstCharOfString)
+        {
+
+            if (eachPara.Length != 0)
+            {
+                var allShouldDemands = this.getShouldDemands(eachPara);
+
+                foreach (Demand eachDemand in allShouldDemands)
                 {
-                    var allShouldDemands = this.getShouldDemands(eachPara);
-
-                    foreach (Demand eachDemand in allShouldDemands)
+                    if (!saved.Equals(firstCharOfString))
                     {
-                        if (!saved.Equals(firstCharOfString))
-                        {
 
-                            if (hg.Current.Contains("."))
-                            {
-                                hg.MoveNext();
-                            }
-                            else
-                            {
-                                hg.DownOneLevel();
-                                hg.MoveNext();
-                            }
-                            eachDemand.setdemandNumber(hg.Current);
-                            bodyDemands.Add(eachDemand);
-                            Debug.WriteLine(eachDemand.getdemandNumber());
-                            Debug.WriteLine(eachDemand.getDemand());
+                        if (hg.Current.Contains("."))
+                        {
+                            hg.MoveNext();
                         }
                         else
                         {
-
-                            if (hg.Current.Contains("."))
-                            {
-                                hg.MoveNext();
-                            }
-                            else
-                            {
-                                hg.DownOneLevel();
-                                hg.MoveNext();
-                            }
-                            eachDemand.setdemandNumber(hg.Current);
-                            bodyDemands.Add(eachDemand);
-                            Debug.WriteLine(eachDemand.getdemandNumber());
-                            Debug.WriteLine(eachDemand.getDemand());
+                            hg.DownOneLevel();
+                            hg.MoveNext();
                         }
+                        eachDemand.setdemandNumber(hg.Current);
+                        bodyDemands.Add(eachDemand);
+                        Debug.WriteLine(eachDemand.getdemandNumber());
+                        Debug.WriteLine(eachDemand.getDemand());
                     }
+                    else
+                    {
 
+                        if (hg.Current.Contains("."))
+                        {
+                            hg.MoveNext();
+                        }
+                        else
+                        {
+                            hg.DownOneLevel();
+                            hg.MoveNext();
+                        }
+                        eachDemand.setdemandNumber(hg.Current);
+                        bodyDemands.Add(eachDemand);
+                        Debug.WriteLine(eachDemand.getdemandNumber());
+                        Debug.WriteLine(eachDemand.getDemand());
+                    }
                 }
+
+            }
+            this.parasToDemandd(eachPara, firstCharOfString);
+        }
+            public void parasToDemandd(String eachPara, String firstCharOfString)
+            {
                 if (eachPara.Length != 0)
                 {
-                    var allShallDemands = this.getShallDemands(eachPara);
+                var allShallDemands = this.getShallDemands(eachPara);
 
 
-                    foreach (Demand eachDemand in allShallDemands)
+                foreach (Demand eachDemand in allShallDemands)
+                {
+                    if (!saved.Equals(firstCharOfString))
                     {
-                        if (!saved.Equals(firstCharOfString))
+                        if (hg.Current.Contains("."))
                         {
-
-                            if (hg.Current.Contains("."))
-                            {
-                                hg.MoveNext();
-                            }
-                            else
-                            {
-                                hg.DownOneLevel();
-                                hg.MoveNext();
-                            }
-                            eachDemand.setdemandNumber(hg.Current);
-                            bodyDemands.Add(eachDemand);
-                            Debug.WriteLine(eachDemand.getdemandNumber());
-                            Debug.WriteLine(eachDemand.getDemand());
+                            hg.MoveNext();
                         }
                         else
                         {
-
-                            if (hg.Current.Contains("."))
-                            {
-                                hg.MoveNext();
-                            }
-                            else
-                            {
-                                hg.DownOneLevel();
-                                hg.MoveNext();
-                            }
-                            eachDemand.setdemandNumber(hg.Current);
-                            bodyDemands.Add(eachDemand);
-                            Debug.WriteLine(eachDemand.getdemandNumber());
-                            Debug.WriteLine(eachDemand.getDemand());
+                            hg.DownOneLevel();
+                            hg.MoveNext();
                         }
+                        eachDemand.setdemandNumber(hg.Current);
+                        bodyDemands.Add(eachDemand);
+                        Debug.WriteLine(eachDemand.getdemandNumber());
+                        Debug.WriteLine(eachDemand.getDemand());
                     }
+                    else
+                    {
 
-                }           
+                        if (hg.Current.Contains("."))
+                        {
+                            hg.MoveNext();
+                        }
+                        else
+                        {
+                            hg.DownOneLevel();
+                            hg.MoveNext();
+                        }
+                        eachDemand.setdemandNumber(hg.Current);
+                        bodyDemands.Add(eachDemand);
+                        Debug.WriteLine(eachDemand.getdemandNumber());
+                        Debug.WriteLine(eachDemand.getDemand());
+                    }
+                }
+
             }
-    
+        }
+
 
         public void addDataToDict(List<Demand> inputBodyDemands, List<Demand> inputHeaderDemands)
         {
@@ -276,7 +289,7 @@ namespace DocParser.Service
 
         public string MyDictionaryToJson()
         {
-            string json = JsonConvert.SerializeObject(allDemands, Formatting.Indented);
+            string json = JsonConvert.SerializeObject(allDemands, Newtonsoft.Json.Formatting.Indented);
             return json;
         }
 
@@ -324,16 +337,21 @@ namespace DocParser.Service
         {
             List<Demand> allShouldDemands = new List<Demand>();
 
-            var checkShouldDemands = new Regex("[^.!?;]*(should|ska)[^.!?;]*");
-            var filteredShouldDemands = checkShouldDemands.Matches(docData);
-
-            var result = Enumerable.Range(0, filteredShouldDemands.Count).Select(index => filteredShouldDemands[index].Value).ToList();
-
-            foreach (string should in result)
+            foreach (string shoulDemand in newshouldList)
             {
-                allShouldDemands.Add(new Demand(should));
-            }
+                string name = "[^.!?;]*()[^.!?;]*";
+                string modified = name.Insert(9, shoulDemand);
+                // var checkShouldDemands = new Regex("[^.!?;]*(should|ska)[^.!?;]*");
+                var checkShouldDemands = new Regex(modified);
+                var filteredShouldDemands = checkShouldDemands.Matches(docData);
 
+                var result = Enumerable.Range(0, filteredShouldDemands.Count).Select(index => filteredShouldDemands[index].Value).ToList();
+
+                foreach (string should in result)
+                {
+                    allShouldDemands.Add(new Demand(should));
+                }
+            }
             return allShouldDemands;
         }
 
@@ -343,14 +361,20 @@ namespace DocParser.Service
 
             List<Demand> allShallDemands = new List<Demand>();
 
-            var checkShallDemands = new Regex("[^.!?;]*(shall|sko)[^.!?;]*");
-            var filteredShallDemands = checkShallDemands.Matches(docData);
-
-            var result = Enumerable.Range(0, filteredShallDemands.Count).Select(index => filteredShallDemands[index].Value).ToList();
-
-            foreach (string shall in result)
+            foreach (string shallDemand in newshallList)
             {
-                allShallDemands.Add(new Demand(shall));
+                string name = "[^.!?;]*()[^.!?;]*";
+                string modified = name.Insert(9, shallDemand);
+                var checkShouldDemands = new Regex(modified);
+                // var checkShallDemands = new Regex("[^.!?;]*(shall|sko)[^.!?;]*");
+                var filteredShallDemands = checkShouldDemands.Matches(docData);
+
+                var result = Enumerable.Range(0, filteredShallDemands.Count).Select(index => filteredShallDemands[index].Value).ToList();
+
+                foreach (string shall in result)
+                {
+                    allShallDemands.Add(new Demand(shall));
+                }
             }
 
             return allShallDemands;
@@ -360,6 +384,7 @@ namespace DocParser.Service
         {
             var allHeaders = new List<Demand>();
             IList<XWPFHeader> headers = Document.HeaderList;
+
             foreach (XWPFHeader header in headers)
             {
                 if (header.Text.Length != 0)
@@ -368,32 +393,18 @@ namespace DocParser.Service
             return allHeaders;
         }
 
-        public List<String> getBody()
-        {
-            var allParas = new List<String>();
-            var bos = Document.Paragraphs;
-            var strHTMLContent = new StringBuilder();
-            string[] spitOnChapter;
-        
-                foreach (XWPFParagraph para in bos)
-                {
-                    strHTMLContent.Append(para.Text);
-                }
-               
-            spitOnChapter = strHTMLContent.ToString().Split(new string[] { "Chapter" }, StringSplitOptions.None);
-         
-            foreach (string chapter in spitOnChapter)
-                    {
-                        if (chapter.Length != 0)
-                        {
 
-                        Regex.Replace(chapter, @"\s+", "");
-                        Debug.WriteLine(chapter + "******************************************************************************");
-                            allParas.Add(chapter);
-                        }
-                    }           
-            Debug.WriteLine(allParas.Count);
-            return allParas;
+        public StringBuilder FilePathHasInvalidChars(StringBuilder path)
+        {
+
+            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+
+            foreach (char c in invalid)
+            {
+                path = path.Replace(c.ToString(), "");
+                Debug.WriteLine(path.Length);
+            }
+            return path;
         }
     }
 }

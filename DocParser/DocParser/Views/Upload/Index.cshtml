@@ -5,9 +5,33 @@
 
 <h2>Upload File</h2>
 
-@using (Html.BeginForm("Upload", "Upload", FormMethod.Post, new { enctype="multipart/form-data" }))
+
+
+@using (Html.BeginForm("Upload", "Upload", FormMethod.Post, new { enctype = "multipart/form-data" }))
 {
-    <input type="file" name="file" /><br>
+    <script>
+
+        $(".languageChoices").select2(
+            {
+                maximumSelectionLength: 2
+            });
+
+    </script>
+
+  
+    <select class="languageChoices" name="SelectedLanguages" multiple="multiple">
+        <option value="1">English</option>
+        <option value="2">Swedish</option>
+        <option value="3">Spanish</option>
+        <option value="4">French</option>
+
+
+    </select><br>
+
+
+    <input type="file" name="file" />
+    <br>
     <input type="submit" value="Upload" class="btn btn-primary" />
+
 }
 <h2>@ViewBag.Msg</h2>
