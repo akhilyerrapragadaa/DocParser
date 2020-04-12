@@ -40,7 +40,7 @@ namespace DocParser.Controllers
                 JsonGen newGenerate = new JsonGen();  
                 newGenerate.readFileData(file.InputStream, sFileExtension, shouldList, shallList);
 
-                System.IO.File.WriteAllText(model + Path.GetFileNameWithoutExtension(file.FileName) + ".json", retrieve.getJson());
+                System.IO.File.WriteAllText(model + Path.GetFileNameWithoutExtension(file.FileName) + ".json", newGenerate.MyDictionaryToJson());
                 ViewBag.Msg = "Uploaded Succesfully";
             }
             else
